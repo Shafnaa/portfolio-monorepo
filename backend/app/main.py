@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from typing import Annotated, List, Optional, Union, Dict, Any, Literal
 
-from sse_starlette.sse import EventSourceResponse
+from sse_starlette.sse import EventSourceResponse, ServerSentEvent
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.agent import build_graph
@@ -203,25 +203,51 @@ async def stream_llm_api(prompt: Union[str, List[ChatMessage]], **kwargs):
 async def create_chat_completion(request: ChatCompletionRequest):
     if request.stream:
         async def generate_stream():
-            stream_id = f"chatcmpl-{int(time.time()*1000)}"
-            async for chunk in stream_llm_api(request.messages, **request.model_dump(exclude={'messages', 'stream'})):
+            stream_id = f"chatcmpl-{int(time.time() * 1000)}"
+            created = int(time.time())
+
+            async for chunk in stream_llm_api(
+                request.messages,
+                **request.model_dump(exclude={"messages", "stream"})
+            ):
                 response = ChatCompletionStreamResponse(
                     id=stream_id,
-                    created=int(time.time()),
+                    created=created,
                     model=request.model,
                     choices=[
                         ChatCompletionStreamResponseChoice(
                             index=0,
                             delta=DeltaMessage(content=chunk),
-                            finish_reason=None
+                            finish_reason=None,
                         )
-                    ]
+                    ],
                 )
-                yield f"data: {response.model_dump_json()}\n\n"
-            
-            # Send the final message
-            yield f"data: {json.dumps({'id': stream_id, 'object': 'chat.completion.chunk', 'created': int(time.time()), 'model': request.model, 'choices': [{'index': 0, 'delta': {}, 'finish_reason': 'stop'}]})}\n\n"
-            yield "data: [DONE]\n\n"
+
+                yield ServerSentEvent(
+                    data=response.model_dump_json()
+                )
+
+            # Final chunk
+            final_response = {
+                "id": stream_id,
+                "object": "chat.completion.chunk",
+                "created": created,
+                "model": request.model,
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {},
+                        "finish_reason": "stop",
+                    }
+                ],
+            }
+
+            yield ServerSentEvent(
+                data=json.dumps(final_response)
+            )
+
+            # OpenAI-compatible stream terminator
+            yield ServerSentEvent(data="[DONE]")
 
         return EventSourceResponse(generate_stream())
     
