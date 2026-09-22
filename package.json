@@ -1,0 +1,17 @@
+{
+  "name": "portfolio-monorepo",
+  "version": "0.1.0",
+  "description": "A monorepo for my personal portfolio website",
+  "repository": "git@github.com:Shafnaa/portfolio-monorepo.git",
+  "author": " <hello@saujanashafi.com>",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+  },
+  "scripts": {
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ]
+}
