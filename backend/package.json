@@ -1,0 +1,7 @@
+{
+  "name": "@app/backend",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+  }
+}
