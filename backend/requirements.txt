@@ -89,6 +89,7 @@ typing_extensions==4.16.0
 urllib3==2.7.0
 uuid_utils==0.16.2
 uvicorn==0.51.0
+notion-client==3.1.0
 wcwidth==0.8.2
 websockets==15.0.1
 xxhash==3.8.1
