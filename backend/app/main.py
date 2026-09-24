@@ -4,8 +4,6 @@ import time
 
 from contextlib import asynccontextmanager
 
-from dotenv import load_dotenv
-
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from typing import Annotated, List, Optional, Union, Dict, Any, Literal
@@ -14,6 +12,7 @@ from sse_starlette.sse import EventSourceResponse, ServerSentEvent
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.agent import build_graph
+from app.config import load_settings
 
 _graph = None
 
@@ -21,13 +20,13 @@ _graph = None
 def get_graph():
     global _graph
     if _graph is None:
-        load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env.local"))
         _graph = build_graph()
     return _graph
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    load_settings()
     get_graph()
     yield
 
